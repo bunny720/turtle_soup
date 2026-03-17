@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>AI海龟汤</title>
+    <style>
+      :root {
+        --bg-0: #040815;
+        --bg-1: #061229;
+        --card: rgba(9, 26, 54, 0.62);
+        --card-border: rgba(124, 168, 255, 0.18);
+        --text: rgba(232, 244, 255, 0.92);
+        --muted: rgba(232, 244, 255, 0.72);
+        --accent: #7ac7ff;
+        --accent-2: #a78bfa;
+        --shadow: rgba(0, 0, 0, 0.55);
+        --fog: rgba(140, 210, 255, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+          Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        color: var(--text);
+        background:
+          radial-gradient(1200px 700px at 10% 0%, rgba(122, 199, 255, 0.14), transparent 55%),
+          radial-gradient(900px 600px at 90% 15%, rgba(167, 139, 250, 0.12), transparent 60%),
+          radial-gradient(1000px 800px at 50% 110%, rgba(40, 140, 255, 0.10), transparent 55%),
+          linear-gradient(180deg, var(--bg-0), var(--bg-1));
+        overflow-x: hidden;
+      }
+
+      .stars {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.9;
+        filter: drop-shadow(0 0 6px rgba(122, 199, 255, 0.08));
+      }
+
+      .fog {
+        position: fixed;
+        inset: -20%;
+        pointer-events: none;
+        mix-blend-mode: screen;
+        opacity: 0.55;
+        filter: blur(10px);
+        background:
+          radial-gradient(900px 520px at 18% 20%, rgba(122, 199, 255, 0.08), transparent 60%),
+          radial-gradient(760px 520px at 70% 35%, rgba(167, 139, 250, 0.07), transparent 62%),
+          radial-gradient(920px 620px at 42% 78%, rgba(122, 199, 255, 0.06), transparent 64%),
+          radial-gradient(820px 520px at 86% 86%, rgba(232, 244, 255, 0.04), transparent 66%);
+        animation: fog-drift 18s ease-in-out infinite alternate;
+      }
+
+      .fog::before,
+      .fog::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(700px 520px at 30% 30%, var(--fog), transparent 64%),
+          radial-gradient(780px 560px at 65% 55%, rgba(167, 139, 250, 0.06), transparent 68%),
+          radial-gradient(840px 600px at 45% 85%, rgba(122, 199, 255, 0.05), transparent 70%);
+        opacity: 0.7;
+      }
+
+      .fog::after {
+        opacity: 0.55;
+        transform: scale(1.08) rotate(2deg);
+        animation: fog-drift-2 24s ease-in-out infinite alternate;
+      }
+
+      @keyframes fog-drift {
+        0% {
+          transform: translate3d(-1.5%, -1%, 0) scale(1.02);
+        }
+        100% {
+          transform: translate3d(1.8%, 1.2%, 0) scale(1.06);
+        }
+      }
+
+      @keyframes fog-drift-2 {
+        0% {
+          transform: translate3d(2.2%, -1.6%, 0) scale(1.08) rotate(2deg);
+        }
+        100% {
+          transform: translate3d(-2.0%, 1.8%, 0) scale(1.12) rotate(-2deg);
+        }
+      }
+
+      .wrap {
+        min-height: 100%;
+        display: grid;
+        place-items: center;
+        padding: 28px 16px;
+      }
+
+      .card {
+        width: min(820px, 100%);
+        border: 1px solid var(--card-border);
+        background: var(--card);
+        box-shadow:
+          0 20px 70px var(--shadow),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        padding: 26px 22px 22px;
+        backdrop-filter: blur(10px);
+      }
+
+      header {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .badge {
+        width: fit-content;
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(232, 244, 255, 0.8);
+        border: 1px solid rgba(122, 199, 255, 0.25);
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: rgba(6, 18, 41, 0.55);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(38px, 6vw, 64px);
+        line-height: 1.02;
+        letter-spacing: 0.02em;
+        font-weight: 800;
+        display: flex;
+        gap: 12px;
+        align-items: baseline;
+      }
+
+      .title-emoji {
+        font-size: 0.9em;
+        filter:
+          drop-shadow(0 0 10px rgba(122, 199, 255, 0.22))
+          drop-shadow(0 0 22px rgba(167, 139, 250, 0.12));
+      }
+
+      .title-text {
+        background: linear-gradient(180deg, rgba(236, 248, 255, 0.98), rgba(163, 218, 255, 0.90));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow:
+          0 16px 46px rgba(0, 0, 0, 0.6),
+          0 0 14px rgba(122, 199, 255, 0.36),
+          0 0 30px rgba(122, 199, 255, 0.18),
+          0 0 46px rgba(167, 139, 250, 0.12);
+      }
+
+      .subtitle {
+        margin: 0;
+        color: var(--muted);
+        font-size: clamp(14px, 2.3vw, 18px);
+        line-height: 1.6;
+      }
+
+      .divider {
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(122, 199, 255, 0.22),
+          rgba(167, 139, 250, 0.18),
+          transparent
+        );
+        margin: 18px 0 16px;
+      }
+
+      .rules {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 10px;
+        counter-reset: rule;
+      }
+
+      .rule {
+        display: grid;
+        grid-template-columns: 34px 1fr;
+        gap: 12px;
+        align-items: start;
+        padding: 12px 12px;
+        border-radius: 16px;
+        border: 1px solid rgba(122, 199, 255, 0.14);
+        background: rgba(6, 18, 41, 0.24);
+      }
+
+      .rule::before {
+        counter-increment: rule;
+        content: counter(rule);
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+        color: rgba(8, 16, 36, 0.95);
+        background: linear-gradient(135deg, rgba(122, 199, 255, 0.95), rgba(167, 139, 250, 0.92));
+        box-shadow:
+          0 12px 32px rgba(122, 199, 255, 0.14),
+          0 10px 26px rgba(167, 139, 250, 0.10);
+      }
+
+      .rule-title {
+        margin: 0;
+        color: rgba(232, 244, 255, 0.92);
+        font-size: 15px;
+        font-weight: 750;
+        letter-spacing: 0.01em;
+      }
+
+      .rule-desc {
+        margin: 4px 0 0;
+        color: rgba(232, 244, 255, 0.74);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .actions {
+        margin-top: 18px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        appearance: none;
+        border: 0;
+        cursor: pointer;
+        border-radius: 14px;
+        padding: 14px 18px;
+        font-size: 16px;
+        font-weight: 700;
+        color: rgba(6, 12, 28, 0.95);
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        box-shadow:
+          0 14px 40px rgba(122, 199, 255, 0.18),
+          0 10px 30px rgba(167, 139, 250, 0.12);
+        transform: translateZ(0);
+        transition:
+          transform 180ms ease,
+          box-shadow 180ms ease,
+          filter 180ms ease;
+        min-width: 170px;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.05);
+        box-shadow:
+          0 20px 52px rgba(122, 199, 255, 0.24),
+          0 14px 40px rgba(167, 139, 250, 0.18);
+      }
+
+      .btn:active {
+        transform: translateY(0px) scale(0.99);
+      }
+
+      .btn:focus-visible {
+        outline: 3px solid rgba(122, 199, 255, 0.38);
+        outline-offset: 3px;
+      }
+
+      .hint {
+        color: rgba(232, 244, 255, 0.65);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .status {
+        margin-top: 14px;
+        padding: 12px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(122, 199, 255, 0.16);
+        background: rgba(6, 18, 41, 0.35);
+        color: rgba(232, 244, 255, 0.78);
+        font-size: 14px;
+        line-height: 1.55;
+        display: none;
+      }
+
+      .status[aria-hidden="false"] {
+        display: block;
+      }
+
+      .game {
+        margin-top: 16px;
+        display: none;
+        border-radius: 18px;
+        border: 1px solid rgba(122, 199, 255, 0.14);
+        background: rgba(6, 18, 41, 0.22);
+        overflow: hidden;
+      }
+
+      .game[data-visible="true"] {
+        display: block;
+      }
+
+      .soup {
+        padding: 14px 14px 10px;
+        border-bottom: 1px solid rgba(122, 199, 255, 0.12);
+        background: rgba(0, 0, 0, 0.12);
+      }
+
+      .soup-title {
+        margin: 0 0 6px;
+        font-size: 14px;
+        letter-spacing: 0.06em;
+        color: rgba(232, 244, 255, 0.82);
+      }
+
+      .soup-text {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.75;
+        color: rgba(232, 244, 255, 0.86);
+      }
+
+      .chat {
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+        max-height: min(44vh, 420px);
+        overflow: auto;
+        overscroll-behavior: contain;
+      }
+
+      .msg {
+        display: grid;
+        gap: 6px;
+      }
+
+      .msg-meta {
+        font-size: 12px;
+        color: rgba(232, 244, 255, 0.55);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .bubble {
+        width: fit-content;
+        max-width: 100%;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(232, 244, 255, 0.12);
+        background: rgba(9, 26, 54, 0.36);
+        color: rgba(232, 244, 255, 0.88);
+        line-height: 1.65;
+        word-break: break-word;
+        white-space: pre-wrap;
+      }
+
+      .msg.player .bubble {
+        margin-left: auto;
+        background: rgba(122, 199, 255, 0.10);
+        border-color: rgba(122, 199, 255, 0.18);
+      }
+
+      .msg.host .bubble {
+        margin-right: auto;
+        background: rgba(167, 139, 250, 0.08);
+        border-color: rgba(167, 139, 250, 0.18);
+      }
+
+      .composer {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        padding: 12px;
+        border-top: 1px solid rgba(122, 199, 255, 0.12);
+        background: rgba(0, 0, 0, 0.10);
+      }
+
+      .input {
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid rgba(232, 244, 255, 0.14);
+        background: rgba(6, 18, 41, 0.35);
+        color: rgba(232, 244, 255, 0.92);
+        padding: 12px 12px;
+        font-size: 15px;
+        outline: none;
+        transition: border-color 180ms ease, box-shadow 180ms ease;
+      }
+
+      .input:focus-visible {
+        border-color: rgba(122, 199, 255, 0.35);
+        box-shadow: 0 0 0 3px rgba(122, 199, 255, 0.12);
+      }
+
+      .btn-small {
+        min-width: 120px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        font-size: 15px;
+      }
+
+      .kbd {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+        padding: 2px 8px;
+        border: 1px solid rgba(232, 244, 255, 0.18);
+        border-bottom-color: rgba(232, 244, 255, 0.12);
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.18);
+        color: rgba(232, 244, 255, 0.8);
+        white-space: nowrap;
+      }
+
+      @media (max-width: 480px) {
+        .card {
+          padding: 22px 16px 18px;
+          border-radius: 18px;
+        }
+        .btn {
+          width: 100%;
+          min-width: 0;
+        }
+        .actions {
+          width: 100%;
+        }
+        .rule {
+          grid-template-columns: 30px 1fr;
+          gap: 10px;
+        }
+        .rule::before {
+          width: 30px;
+          height: 30px;
+        }
+        .composer {
+          grid-template-columns: 1fr;
+        }
+        .btn-small {
+          width: 100%;
+          min-width: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .btn {
+          transition: none;
+        }
+        .stars {
+          display: none;
+        }
+        .fog {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas class="stars" id="stars" aria-hidden="true"></canvas>
+    <div class="fog" aria-hidden="true"></div>
+
+    <main class="wrap">
+      <section class="card" aria-label="AI海龟汤欢迎页">
+        <header>
+          <div class="badge">Mystery • Logic • AI</div>
+          <h1>
+            <span class="title-emoji" aria-hidden="true">🐢</span>
+            <span class="title-text">AI海龟汤</span>
+          </h1>
+          <p class="subtitle">
+            你将面对一段离奇的“汤面”，通过<strong>是 / 否 / 不相关</strong>提问，逐步还原隐藏的真相。
+            不要急，答案往往藏在最不起眼的细节里。
+          </p>
+        </header>
+
+        <div class="divider" role="presentation"></div>
+
+        <ol class="rules" aria-label="游戏规则简介">
+          <li class="rule">
+            <div>
+              <p class="rule-title">目标</p>
+              <p class="rule-desc">根据“汤面”推理出完整故事（汤底）。</p>
+            </div>
+          </li>
+          <li class="rule">
+            <div>
+              <p class="rule-title">提问方式</p>
+              <p class="rule-desc">只提出能被回答为“是 / 否 / 不相关”的问题。</p>
+            </div>
+          </li>
+          <li class="rule">
+            <div>
+              <p class="rule-title">推进节奏</p>
+              <p class="rule-desc">先确认关键前提，再逐步补齐细节，缩小可能性。</p>
+            </div>
+          </li>
+          <li class="rule">
+            <div>
+              <p class="rule-title">卡住怎么办</p>
+              <p class="rule-desc">换个角度提问，或先验证“是不是这样”的基础假设。</p>
+            </div>
+          </li>
+        </ol>
+
+        <div class="actions">
+          <button class="btn" id="startBtn" type="button">开始游戏</button>
+          <div class="hint">
+            按 <span class="kbd">Enter</span> 也可以开始
+          </div>
+        </div>
+
+        <div class="status" id="status" aria-hidden="true"></div>
+
+        <section class="game" id="game" data-visible="false" aria-label="海龟汤游戏">
+          <div class="soup" aria-label="汤面">
+            <p class="soup-title">汤面</p>
+            <p class="soup-text" id="soupText"></p>
+          </div>
+          <div class="chat" id="chat" aria-label="对话记录"></div>
+          <div class="composer" aria-label="提问输入区">
+            <input
+              class="input"
+              id="questionInput"
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              placeholder="请输入一个可被“是 / 不是 / 无关 / 是也不是”回答的问题…"
+            />
+            <button class="btn btn-small" id="sendBtn" type="button">提问</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      (function () {
+        const startBtn = document.getElementById("startBtn");
+        const status = document.getElementById("status");
+        const gameEl = document.getElementById("game");
+        const soupTextEl = document.getElementById("soupText");
+        const chatEl = document.getElementById("chat");
+        const questionInput = document.getElementById("questionInput");
+        const sendBtn = document.getElementById("sendBtn");
+
+        const ANSWERS = {
+          YES: "是",
+          NO: "不是",
+          IRRELEVANT: "无关",
+          BOTH: "是也不是",
+        };
+
+        const HOST_RULE_REMINDER = "请用可被是 / 不是 / 无关 / 是也不是回答的问题提问";
+
+        function pick(arr) {
+          return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function makeGame() {
+          const name = pick(["阿岚", "林宇", "周岩", "陈默", "沈舟", "许言"]);
+          const place = pick(["小馆", "老店", "街角的餐馆", "一间不起眼的饭店", "深夜食堂"]);
+          const item = pick(["海龟汤", "蘑菇汤", "海鲜汤", "牛肉汤", "鸡汤"]);
+
+          // Each template returns: surface, solution, hint (one sentence), patterns (regex -> answer).
+          const templates = [
+            () => ({
+              surface: `${name}在${place}点了一碗${item}，喝了一口后脸色大变，立刻结账回家，然后自杀了。`,
+              solution:
+                `${name}曾遭遇海难，与同伴漂流求生。期间他昏迷过一次，醒来后同伴告诉他：为了让他活下去，给他吃了“${item}”。他当时相信了。\n\n多年后他在餐馆真正喝到${item}，发现味道与当年完全不同，于是意识到同伴当年给他吃的并不是“${item}”里的材料，而很可能是人肉。同伴为了让他活命欺骗了他。真相带来的巨大冲击与愧疚让他回家自杀。`,
+              hint: "关键不在这碗汤，而在“他以前也尝过被同名描述的东西”。",
+              patterns: [
+                { re: /(自杀|结束生命|死于|死亡|死了吗|他死)/, a: ANSWERS.YES },
+                { re: /(下毒|毒|中毒|有毒|毒死)/, a: ANSWERS.NO },
+                { re: /(杀人|谋杀|他杀|害死别人)/, a: ANSWERS.NO },
+                { re: /(海难|沉船|漂流|荒岛|求生|救生艇)/, a: ANSWERS.YES },
+                { re: /(同伴|朋友|别人|有人|救他|救过)/, a: ANSWERS.YES },
+                { re: /(骗|欺骗|谎|隐瞒|误导|被蒙在鼓里)/, a: ANSWERS.YES },
+                { re: /(人肉|吃人|食人|同类|尸体)/, a: ANSWERS.YES },
+                { re: /(餐馆|饭店|店里|点了|喝了|真正|真的)/, a: ANSWERS.YES },
+                { re: /(以前|之前).*(喝过|吃过|尝过).*(汤|${item})/, a: ANSWERS.BOTH },
+                { re: /(因为汤|汤导致|喝了汤才|汤本身|口味|味道)/, a: ANSWERS.BOTH },
+                { re: /(欠债|债务|破产|钱|赔偿)/, a: ANSWERS.IRRELEVANT },
+                { re: /(爱情|恋爱|分手|出轨|婚姻)/, a: ANSWERS.IRRELEVANT },
+              ],
+            }),
+            () => ({
+              surface: `${name}在家里接到一个电话后，立刻把手机丢进水里，然后报警。`,
+              solution:
+                `${name}以前做过“电话诈骗”的受害者，导致家里老人因此受刺激出事。此后他把任何陌生电话都当作危险。\n\n这次电话里并没有威胁，也没有勒索，对方只是用同样的开场白试探是否能骗到钱。${name}听到那句熟悉的“开场”，瞬间回到当年的创伤反应：先毁掉手机防止被定位或被远程控制，然后报警。`,
+              hint: "电话里说的第一句话很关键。",
+              patterns: [
+                { re: /(报警|报了警|警察)/, a: ANSWERS.YES },
+                { re: /(被勒索|勒索|绑架|赎金)/, a: ANSWERS.NO },
+                { re: /(定位|跟踪|监听|窃听)/, a: ANSWERS.BOTH },
+                { re: /(诈骗|骗|骗子|话术)/, a: ANSWERS.YES },
+                { re: /(欠债|债务|破产|钱|赔偿)/, a: ANSWERS.IRRELEVANT },
+                { re: /(爱情|恋爱|分手|出轨|婚姻)/, a: ANSWERS.IRRELEVANT },
+              ],
+            }),
+            () => ({
+              surface: `${name}把一封看起来很普通的信撕碎吞下，然后若无其事地走开。`,
+              solution:
+                `那封信不是普通信件，而是${name}用于交换情报的暗号载体。为了不留下证据，他需要立刻销毁内容。\n\n信纸使用了可食用材料做成薄片，吞下是最快且最安全的销毁方式。`,
+              hint: "这不是冲动行为，而是“处理证据”。",
+              patterns: [
+                { re: /(信|信件|纸|纸张)/, a: ANSWERS.YES },
+                { re: /(犯法|违法|犯罪)/, a: ANSWERS.BOTH },
+                { re: /(毒|中毒|有毒)/, a: ANSWERS.NO },
+                { re: /(情报|暗号|密码|证据)/, a: ANSWERS.YES },
+                { re: /(欠债|债务|破产|钱|赔偿)/, a: ANSWERS.IRRELEVANT },
+                { re: /(爱情|恋爱|分手|出轨|婚姻)/, a: ANSWERS.IRRELEVANT },
+              ],
+            }),
+            () => ({
+              surface: `${name}走进一家理发店，听到店里一句话后转身就跑。`,
+              solution:
+                `${name}曾被困在火灾现场，靠“闻到烧焦味”和“听到剪刀的金属声”才确定出口方向逃生。\n\n这家理发店里有人用同样的金属声敲击（并非剪刀），触发了他的强烈条件反射与惊恐，他误以为周围又要发生危险，于是转身就跑。`,
+              hint: "他逃跑的原因来自过去的经历。",
+              patterns: [
+                { re: /(理发|理发店|剪发|剪刀)/, a: ANSWERS.YES },
+                { re: /(火灾|着火|烟|烧焦)/, a: ANSWERS.YES },
+                { re: /(有人要杀他|被追杀|谋杀)/, a: ANSWERS.NO },
+                { re: /(幻觉|精神病)/, a: ANSWERS.NO },
+                { re: /(条件反射|创伤|ptsd|应激)/, a: ANSWERS.YES },
+              ],
+            }),
+            () => ({
+              surface: `${name}在电梯里按下了所有楼层按钮，然后平静地站在角落。`,
+              solution:
+                `${name}并不是恶作剧。他被人尾随进了电梯，为了增加对方行动难度、制造更多开门机会与监控画面，他按下所有楼层。\n\n他站在角落是为了让自己视野覆盖最大并减少被突然靠近的可能。`,
+              hint: "他是在“降低风险”，不是在捣乱。",
+              patterns: [
+                { re: /(电梯|楼层|按钮)/, a: ANSWERS.YES },
+                { re: /(恶作剧|捣乱|故意)/, a: ANSWERS.NO },
+                { re: /(有人跟踪|尾随|可疑的人|被跟着)/, a: ANSWERS.YES },
+                { re: /(他认识那个人|熟人)/, a: ANSWERS.IRRELEVANT },
+                { re: /(报警|警察)/, a: ANSWERS.IRRELEVANT },
+              ],
+            }),
+            () => ({
+              surface: `${name}打开冰箱看到里面的东西后，先笑了笑，接着哭了。`,
+              solution:
+                `那天是${name}和已故亲人约好的纪念日。冰箱里放着一份他小时候最爱的食物——这是家人提前准备的“留给未来的礼物”。\n\n他先因意外的惊喜而笑，随即想到对方已不在，情绪涌上来，于是哭了。`,
+              hint: "冰箱里的东西承载了某种约定。",
+              patterns: [
+                { re: /(冰箱|食物|菜|蛋糕|饭)/, a: ANSWERS.YES },
+                { re: /(有人死|去世|已故|葬礼)/, a: ANSWERS.YES },
+                { re: /(下毒|中毒|有毒)/, a: ANSWERS.NO },
+                { re: /(恐怖|尸体|分尸)/, a: ANSWERS.NO },
+                { re: /(爱情|恋爱|分手|出轨|婚姻)/, a: ANSWERS.IRRELEVANT },
+              ],
+            }),
+          ];
+
+          return pick(templates)();
+        }
+
+        let currentGame = null;
+
+        const state = {
+          started: false,
+          ended: false,
+        };
+
+        function showStatus(message) {
+          status.textContent = message;
+          status.setAttribute("aria-hidden", "false");
+        }
+
+        function escapeHtml(s) {
+          return s.replace(/[&<>"']/g, (c) => {
+            const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+            return map[c] || c;
+          });
+        }
+
+        function appendMessage(role, text) {
+          const msg = document.createElement("div");
+          msg.className = `msg ${role}`;
+
+          const meta = document.createElement("div");
+          meta.className = "msg-meta";
+          meta.textContent = role === "player" ? "Player" : "Host";
+
+          const bubble = document.createElement("div");
+          bubble.className = "bubble";
+          bubble.innerHTML = escapeHtml(text);
+
+          msg.appendChild(meta);
+          msg.appendChild(bubble);
+          chatEl.appendChild(msg);
+
+          chatEl.scrollTop = chatEl.scrollHeight;
+        }
+
+        function normalize(text) {
+          return text
+            .trim()
+            .replace(/\s+/g, " ")
+            .toLowerCase();
+        }
+
+        function isGiveUp(q) {
+          return /放弃|猜不出|认输/.test(q);
+        }
+
+        function isHintRequest(q) {
+          return /线索|提示|给点提示|给个提示|帮我一下|卡住/.test(q);
+        }
+
+        function isRuleBreaking(q) {
+          // Asking directly for the answer / solution rather than yes-no questions.
+          return /答案|汤底|真相|直接告诉|公布|解释一下|怎么回事|是什么故事|完整故事/.test(q);
+        }
+
+        function looksLikeQuestion(qRaw) {
+          const q = qRaw.trim();
+          if (!q) return false;
+          // Allow Chinese/English question marks or typical yes/no framing.
+          if (/[?？]$/.test(q)) return true;
+          if (/^(是不是|是否|能否|可否|有没有|会不会|是否是|是不是说)/.test(q)) return true;
+          if (/(吗|呢)$/.test(q)) return true;
+          return false;
+        }
+
+        function answerFromFacts(qRaw) {
+          const q = normalize(qRaw);
+
+          // End / reveal logic
+          if (isGiveUp(qRaw)) {
+            state.ended = true;
+            return { type: "reveal", text: currentGame ? currentGame.solution : "" };
+          }
+
+          // Hint logic (only when the player explicitly requests it)
+          if (isHintRequest(qRaw)) {
+            return { type: "hint", text: currentGame ? currentGame.hint : "" };
+          }
+
+          // Rule enforcement for non yes/no style or demanding the solution
+          if (isRuleBreaking(qRaw) || !looksLikeQuestion(qRaw)) {
+            return { type: "reminder", text: HOST_RULE_REMINDER };
+          }
+
+          // Fact-based answering for the current soup.
+          const patterns = (currentGame && currentGame.patterns) || [];
+
+          for (const p of patterns) {
+            if (p.re.test(q)) return { type: "answer", text: p.a };
+          }
+
+          // Default: if not match, treat as irrelevant to avoid leaking.
+          return { type: "answer", text: ANSWERS.IRRELEVANT };
+        }
+
+        function beginSession() {
+          state.started = true;
+          state.ended = false;
+          gameEl.dataset.visible = "true";
+          currentGame = makeGame();
+          soupTextEl.textContent = currentGame.surface;
+          chatEl.innerHTML = "";
+          appendMessage("host", "（已出汤面，开始提问吧。）");
+          questionInput.value = "";
+          questionInput.focus();
+        }
+
+        function startGame() {
+          showStatus("游戏已开始。");
+          beginSession();
+        }
+
+        startBtn.addEventListener("click", startGame);
+        document.addEventListener("keydown", (e) => {
+          if (!state.started && e.key === "Enter") startGame();
+        });
+
+        function submitQuestion() {
+          if (!state.started) return;
+          const q = questionInput.value.trim();
+          if (!q) return;
+
+          appendMessage("player", q);
+          questionInput.value = "";
+
+          const res = answerFromFacts(q);
+          appendMessage("host", res.text);
+
+          if (res.type === "reveal") {
+            // After reveal, keep accepting questions but answers will continue to be consistent.
+          }
+        }
+
+        sendBtn.addEventListener("click", submitQuestion);
+        questionInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") submitQuestion();
+        });
+
+        // Subtle starfield (canvas), intentionally lightweight for mobile.
+        const canvas = document.getElementById("stars");
+        const ctx = canvas.getContext("2d");
+        let w = 0;
+        let h = 0;
+        let dpr = 1;
+        let stars = [];
+        let raf = 0;
+
+        function resize() {
+          dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+          w = Math.floor(window.innerWidth);
+          h = Math.floor(window.innerHeight);
+          canvas.width = Math.floor(w * dpr);
+          canvas.height = Math.floor(h * dpr);
+          canvas.style.width = w + "px";
+          canvas.style.height = h + "px";
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          initStars();
+        }
+
+        function initStars() {
+          const count = Math.floor((w * h) / 18000);
+          stars = new Array(Math.max(40, Math.min(140, count))).fill(0).map(() => {
+            const depth = Math.random() * 0.9 + 0.1;
+            return {
+              x: Math.random() * w,
+              y: Math.random() * h,
+              r: Math.random() * 1.2 + 0.2,
+              a: Math.random() * 0.6 + 0.15,
+              s: (Math.random() * 0.4 + 0.08) * depth,
+              t: Math.random() * Math.PI * 2,
+              depth,
+            };
+          });
+        }
+
+        function draw() {
+          ctx.clearRect(0, 0, w, h);
+          ctx.fillStyle = "rgba(0,0,0,0)";
+          const cx = w * 0.5;
+          const cy = h * 0.48;
+
+          for (let i = 0; i < stars.length; i++) {
+            const s = stars[i];
+            s.t += 0.01 * s.depth;
+            const twinkle = 0.35 * Math.sin(s.t) + 0.65;
+            const alpha = s.a * twinkle;
+
+            // Slow drift towards center for a subtle eerie pull.
+            s.x += (cx - s.x) * (0.00006 * s.depth);
+            s.y += (cy - s.y) * (0.00006 * s.depth);
+            s.y += s.s;
+            if (s.y > h + 8) {
+              s.y = -8;
+              s.x = Math.random() * w;
+            }
+
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(180, 220, 255, ${alpha.toFixed(3)})`;
+            ctx.fill();
+          }
+
+          raf = window.requestAnimationFrame(draw);
+        }
+
+        const reducedMotion =
+          window.matchMedia &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (!reducedMotion) {
+          window.addEventListener("resize", resize, { passive: true });
+          resize();
+          draw();
+        }
+      })();
+    </script>
+  </body>
+</html>
+
